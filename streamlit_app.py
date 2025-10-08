@@ -1,62 +1,95 @@
 import streamlit as st
-from openai import OpenAI
+import os
+from dotenv import load_dotenv
+from litellm import completion
+import random
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except Exception:
-    pass
+# Load API Key
+load_dotenv()
+GROQ_KEY = os.getenv("GROQ_API_KEY")
+OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 
-# Show title and description.
-st.title("💬 Kin Arai Dee Chatbot")
-st.write(
-    "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
-    "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-    "You can also learn how to build this app step by step by [following our tutorial](https://docs.streamlit.io/develop/tutorials/llms/build-conversational-apps)."
-)
+# Setting keys by environment
+os.environ["GROQ_API_KEY"] = GROQ_KEY
+os.environ["OPENAI_API_KEY"] = OPENAI_KEY
 
-# Ask user for their OpenAI API key via `st.text_input`.
-# Alternatively, you can store the API key in `./.streamlit/secrets.toml` and access it
-# via `st.secrets`, see https://docs.streamlit.io/develop/concepts/connections/secrets-management
-openai_api_key = st.text_input("OpenAI API Key", type="password")
-if not openai_api_key:
-    st.info("Please add your OpenAI API key to continue.", icon="🗝️")
-else:
+# -------------------------------
+# Model list
+MODELS = {
+    "🧠 OpenAI GPT (gpt-4o-mini)": {
+        "id": "gpt-4o-mini",
+        "api_key": OPENAI_KEY,
+    },
+    "🦙 LLaMA 3.1 8B Instant": {
+        "id": "groq/llama-3.1-8b-instant",
+        "api_key": GROQ_KEY,
+    },
+    "🦙 LLaMA 3.3 70B Versatile": {
+        "id": "groq/llama-3.3-70b-versatile",
+        "api_key": GROQ_KEY,
+    },
+    "🦙 DeepSeek R1 Distill 70B": {
+        "id": "groq/deepseek-r1-distill-llama-70b",
+        "api_key": GROQ_KEY,
+    },
+    "🧪 Gemma 2 9B": {
+        "id": "groq/gemma2-9b-it",
+        "api_key": GROQ_KEY,
+    },
+}
 
-    # Create an OpenAI client.
-    client = OpenAI(api_key=openai_api_key)
+# -------------------------------
+# Basic Menu List
+basic_menu = [
+    "ข้าวกะเพราไข่ดาว 🍳",
+    "ก๋วยเตี๋ยวเรือ 🥢",
+    "ส้มตำ ไก่ย่าง ข้าวเหนียว 🐔",
+    "ข้าวผัดกุ้ง 🍤",
+    "ผัดไทย 🥜",
+    "ชาบู 🍲",
+    "หมูกระทะ 🐷🔥",
+    "ราเมง 🍜",
+    "ซูชิ 🍣",
+    "พิซซ่า 🍕"
+]
 
-    # Create a session state variable to store the chat messages. This ensures that the
-    # messages persist across reruns.
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+# -------------------------------
+# UI
+st.set_page_config(page_title="FoodBot Kin-Arai-Dee 🍜", page_icon="🍽️")
+st.title("🤖 Kin-Arai-Dee FoodBot — ไม่รู้จะกินอะไรดี บอกฉันสิ!")
 
-    # Display the existing chat messages via `st.chat_message`.
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+selected_model = st.selectbox("เลือกโมเดล AI", list(MODELS.keys()))
+model_info = MODELS[selected_model]
 
-    # Create a chat input field to allow the user to enter a message. This will display
-    # automatically at the bottom of the page.
-    if prompt := st.chat_input("What is up?"):
+user_input = st.text_input("คุณ:", placeholder="เช่น อยากกินอะไรแซบๆ, อยากกินอะไรเบาๆ, ...")
 
-        # Store and display the current prompt.
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+# Simple random
+if st.button("สุ่มเมนูแบบง่าย 🍽️"):
+    suggestion = random.choice(basic_menu)
+    st.success(f"🥢 วันนี้ลองกิน **{suggestion}** ดูไหม?")
 
-        # Generate a response using the OpenAI API.
-        stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": m["role"], "content": m["content"]}
-                for m in st.session_state.messages
-            ],
-            stream=True,
-        )
+# Call AI via liteLLM
+if st.button("ให้ AI ช่วยคิดเมนู 🧠"):
+    if user_input.strip():
+        with st.spinner(f"Thinking {selected_model}..."):
+            prompt = f"""
+                    You are a friendly food assistant. 
+                    The user says: "{user_input}".
+                    Suggest ONE specific food menu that matches their mood or craving.
+                    - Be clear and concise
+                    - Suggest a popular menu in Thailand or Asia
+                    - Include 1 short sentence explaining why this menu fits their feeling.
+                    - Answer in Thai language.
+                    """
 
-        # Stream the response to the chat using `st.write_stream`, then store it in 
-        # session state.
-        with st.chat_message("assistant"):
-            response = st.write_stream(stream)
-        st.session_state.messages.append({"role": "assistant", "content": response})
+            response = completion(
+                model=model_info["id"],
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.6,
+                max_tokens=70,
+                api_key=model_info["api_key"]
+            )
+            ai_suggestion = response["choices"][0]["message"]["content"]
+        st.success(f"🍜 {ai_suggestion}")
+    else:
+        st.warning("กรุณาพิมพ์ความรู้สึกก่อนนะครับ 😊")
