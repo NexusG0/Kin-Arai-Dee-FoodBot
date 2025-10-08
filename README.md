@@ -6,8 +6,6 @@ Base on Streamlit app.
 [![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://chatbot-template.streamlit.app/)
 
 ### How to run it on your own machine
-
-   # For macOS
    
    1. Setup Environment
    
