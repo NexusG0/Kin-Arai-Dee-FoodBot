@@ -9,14 +9,14 @@ Base on Streamlit app.
    
    1. Setup Environment
    
-      # For Windows
+      For Windows
       
       ```
       $ python3 venv .venv
       $ source .venv/bin/activate
       ```
       
-      # For macOS
+      For macOS
    
       ```
       $ python3 -m venv venv
