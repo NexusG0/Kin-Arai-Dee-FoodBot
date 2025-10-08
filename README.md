@@ -7,14 +7,32 @@ Base on Streamlit app.
 
 ### How to run it on your own machine
 
-1. Install the requirements
+   # For macOS
+   
+   1. Setup Environment
+   
+      # For Windows
+      
+      ```
+      $ python3 venv .venv
+      $ source .venv/bin/activate
+      ```
+      
+      # For macOS
+   
+      ```
+      $ python3 -m venv venv
+      $ source venv/bin/activate
+      ```
 
-   ```
-   $ pip install -r requirements.txt
-   ```
+   3. Install the requirements
 
-2. Run the app
+      ```
+      $ pip install -r requirements.txt
+      ```
 
-   ```
-   $ streamlit run streamlit_app.py
-   ```
+   4. Run the app
+
+      ```
+      $ streamlit run app.py
+      ```
