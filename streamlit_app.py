@@ -28,7 +28,7 @@ MODELS = {
         "id": "groq/llama-3.3-70b-versatile",
         "api_key": GROQ_KEY,
     },
-    "🦙 DeepSeek R1 Distill 70B": {
+    "🐋 DeepSeek R1 Distill 70B": {
         "id": "groq/deepseek-r1-distill-llama-70b",
         "api_key": GROQ_KEY,
     },
@@ -56,7 +56,7 @@ basic_menu = [
 # -------------------------------
 # UI
 st.set_page_config(page_title="FoodBot Kin-Arai-Dee 🍜", page_icon="🍽️")
-st.title("🤖 Kin-Arai-Dee FoodBot — ไม่รู้จะกินอะไรดี บอกฉันสิ!")
+st.title("🍽 Kin-Arai-Dee FoodBot — ไม่รู้จะกินอะไรดี บอกฉันสิ!")
 
 selected_model = st.selectbox("เลือกโมเดล AI", list(MODELS.keys()))
 model_info = MODELS[selected_model]
