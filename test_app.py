@@ -64,12 +64,12 @@ model_info = MODELS[selected_model]
 user_input = st.text_input("คุณ:", placeholder="เช่น อยากกินอะไรแซบๆ, อยากกินอะไรเบาๆ, ...")
 
 # Simple random
-if st.button("สุ่มเมนูแบบง่าย 🍽️"):
+if st.button("🍽️ สุ่มเมนูแบบง่าย (ไม่เสีย Token)"):
     suggestion = random.choice(basic_menu)
     st.success(f"🥢 วันนี้ลองกิน **{suggestion}** ดูไหม?")
 
 # Call AI via liteLLM
-if st.button("ให้ AI ช่วยคิดเมนู 🧠"):
+if st.button("🧠 ให้ AI ช่วยคิดเมนู"):
     if user_input.strip():
         with st.spinner(f"Thinking {selected_model}..."):
             prompt = f"""
