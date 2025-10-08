@@ -1,4 +1,4 @@
-# 🍽️ Kin Arai Dee Chatbot
+# 🍽️ Kin-Arai-Dee Foodbot
 
 A simple Chatbot that's can random idea for your meal by using OpenAI's GPT-3.5 and others.
 Base on Streamlit app.
