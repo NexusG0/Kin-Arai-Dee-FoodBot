@@ -1,105 +1,45 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-from groq import Groq
-from openai import OpenAI
+from litellm import completion
 import random
 
-# โหลด API Key
+# Load API Key
 load_dotenv()
 GROQ_KEY = os.getenv("GROQ_API_KEY")
 OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 
-groq_client = Groq(api_key=GROQ_KEY)
-openai_client = OpenAI(api_key=OPENAI_KEY)
+# Setting keys by environment
+os.environ["GROQ_API_KEY"] = GROQ_KEY
+os.environ["OPENAI_API_KEY"] = OPENAI_KEY
 
 # -------------------------------
 # Model list
 MODELS = {
     "🧠 OpenAI GPT (gpt-4o-mini)": {
-        "provider": "openai",
         "id": "gpt-4o-mini",
+        "api_key": OPENAI_KEY,
     },
     "🦙 LLaMA 3.1 8B Instant": {
-        "provider": "groq",
-        "id": "llama-3.1-8b-instant",
+        "id": "groq/llama-3.1-8b-instant",
+        "api_key": GROQ_KEY,
     },
     "🦙 LLaMA 3.3 70B Versatile": {
-        "provider": "groq",
-        "id": "llama-3.3-70b-versatile",
-    },
-    "🦙 Allam 2 7B": {
-        "provider": "groq",
-        "id": "allam-2-7b",
+        "id": "groq/llama-3.3-70b-versatile",
+        "api_key": GROQ_KEY,
     },
     "🦙 DeepSeek R1 Distill 70B": {
-        "provider": "groq",
-        "id": "deepseek-r1-distill-llama-70b",
+        "id": "groq/deepseek-r1-distill-llama-70b",
+        "api_key": GROQ_KEY,
     },
     "🧪 Gemma 2 9B": {
-        "provider": "groq",
-        "id": "gemma2-9b-it",
-    },
-    "🌿 Groq Compound": {
-        "provider": "groq",
-        "id": "groq/compound",
-    },
-    "🌿 Groq Compound Mini": {
-        "provider": "groq",
-        "id": "groq/compound-mini",
-    },
-    "🦙 LLaMA 4 Maverick 17B": {
-        "provider": "groq",
-        "id": "meta-llama/llama-4-maverick-17b-128e-instruct",
-    },
-    "🦙 LLaMA 4 Scout 17B": {
-        "provider": "groq",
-        "id": "meta-llama/llama-4-scout-17b-16e-instruct",
-    },
-    "🦙 LLaMA Guard 4 12B": {
-        "provider": "groq",
-        "id": "meta-llama/llama-guard-4-12b",
-    },
-    "🛡️ Prompt Guard 22M": {
-        "provider": "groq",
-        "id": "meta-llama/llama-prompt-guard-2-22m",
-    },
-    "🛡️ Prompt Guard 86M": {
-        "provider": "groq",
-        "id": "meta-llama/llama-prompt-guard-2-86m",
-    },
-    "🌙 Moonshot Kimi K2": {
-        "provider": "groq",
-        "id": "moonshotai/kimi-k2-instruct",
-    },
-    "🌙 Moonshot Kimi K2 (0905)": {
-        "provider": "groq",
-        "id": "moonshotai/kimi-k2-instruct-0905",
-    },
-    "🧠 GPT OSS 120B": {
-        "provider": "groq",
-        "id": "openai/gpt-oss-120b",
-    },
-    "🧠 GPT OSS 20B": {
-        "provider": "groq",
-        "id": "openai/gpt-oss-20b",
-    },
-    "🗣️ PlayAI TTS": {
-        "provider": "groq",
-        "id": "playai-tts",
-    },
-    "🗣️ PlayAI TTS Arabic": {
-        "provider": "groq",
-        "id": "playai-tts-arabic",
-    },
-    "🧠 Qwen 3 32B": {
-        "provider": "groq",
-        "id": "qwen/qwen3-32b",
+        "id": "groq/gemma2-9b-it",
+        "api_key": GROQ_KEY,
     },
 }
 
 # -------------------------------
-# เมนูพื้นฐาน
+# Basic Menu List
 basic_menu = [
     "ข้าวกะเพราไข่ดาว 🍳",
     "ก๋วยเตี๋ยวเรือ 🥢",
@@ -115,40 +55,41 @@ basic_menu = [
 
 # -------------------------------
 # UI
-st.set_page_config(page_title="FoodBot 🍜", page_icon="🍽️")
-st.title("🤖 FoodBot — ไม่รู้จะกินอะไรดี บอกฉันสิ!")
+st.set_page_config(page_title="FoodBot Kin-Arai-Dee 🍜", page_icon="🍽️")
+st.title("🤖 Kin-Arai-Dee FoodBot — ไม่รู้จะกินอะไรดี บอกฉันสิ!")
 
-# ตัวเลือกโมเดล
 selected_model = st.selectbox("เลือกโมเดล AI", list(MODELS.keys()))
 model_info = MODELS[selected_model]
 
 user_input = st.text_input("คุณ:", placeholder="เช่น อยากกินอะไรแซบๆ, อยากกินอะไรเบาๆ, ...")
 
+# Simple random
 if st.button("สุ่มเมนูแบบง่าย 🍽️"):
     suggestion = random.choice(basic_menu)
     st.success(f"🥢 วันนี้ลองกิน **{suggestion}** ดูไหม?")
 
+# Call AI via liteLLM
 if st.button("ให้ AI ช่วยคิดเมนู 🧠"):
     if user_input.strip():
         with st.spinner(f"Thinking {selected_model}..."):
-            prompt = f"Suggest one food menu for '{user_input}'"
-            if model_info["provider"] == "openai":
-                response = openai_client.chat.completions.create(
-                    model=model_info["id"],
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=50,
-                    temperature=0.4
-                )
-                ai_suggestion = response.choices[0].message.content
-            else:
-                response = groq_client.chat.completions.create(
-                    model=model_info["id"],
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=50,
-                    temperature=0.4
-                )
-                ai_suggestion = response.choices[0].message.content
+            prompt = f"""
+                    You are a friendly food assistant. 
+                    The user says: "{user_input}".
+                    Suggest ONE specific food menu that matches their mood or craving.
+                    - Be clear and concise
+                    - Suggest a popular menu in Thailand or Asia
+                    - Include 1 short sentence explaining why this menu fits their feeling.
+                    - Answer in Thai language.
+                    """
 
+            response = completion(
+                model=model_info["id"],
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.6,
+                max_tokens=70,
+                api_key=model_info["api_key"]
+            )
+            ai_suggestion = response["choices"][0]["message"]["content"]
         st.success(f"🍜 {ai_suggestion}")
     else:
         st.warning("กรุณาพิมพ์ความรู้สึกก่อนนะครับ 😊")
