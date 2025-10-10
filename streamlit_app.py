@@ -56,17 +56,20 @@ basic_menu = [
 # -------------------------------
 # UI
 st.set_page_config(page_title="FoodBot Kin-Arai-Dee 🍜", page_icon="🍽️")
-st.title("🍽 Kin-Arai-Dee FoodBot — ไม่รู้จะกินอะไรดี บอกฉันสิ!")
-
-selected_model = st.selectbox("เลือกโมเดล AI", list(MODELS.keys()))
-model_info = MODELS[selected_model]
-
-user_input = st.text_input("คุณ:", placeholder="เช่น อยากกินอะไรแซบๆ, อยากกินอะไรเบาๆ, ...")
+st.title("🍽 Kin-Arai-Dee FoodBot")
+st.title("ไม่รู้จะกินอะไรดี บอกฉันสิ!")
 
 # Simple random
 if st.button("🍽️ สุ่มเมนูแบบง่าย (ไม่เสีย Token)"):
     suggestion = random.choice(basic_menu)
     st.success(f"🥢 วันนี้ลองกิน **{suggestion}** ดูไหม?")
+
+st.divider()
+
+selected_model = st.selectbox("เลือกโมเดล AI", list(MODELS.keys()))
+model_info = MODELS[selected_model]
+
+user_input = st.text_input("คุณ:", placeholder="เช่น อยากกินอะไรแซบๆ, อยากกินอะไรเบาๆ, ...")
 
 # Call AI via liteLLM
 if st.button("🧠 ให้ AI ช่วยคิดเมนู"):
