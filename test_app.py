@@ -5,15 +5,25 @@ from litellm import completion
 import random
 import json
 
-# โหลด API Key
-load_dotenv()
-GROQ_KEY = os.getenv("GROQ_API_KEY")
-OPENAI_KEY = os.getenv("OPENAI_API_KEY")
+# --- การตั้งค่าพื้นฐาน ---
 
-os.environ["GROQ_API_KEY"] = GROQ_KEY
-os.environ["OPENAI_API_KEY"] = OPENAI_KEY
+# Load API Key
+# หมายเหตุ: ในสภาพแวดล้อมจริง ควรจัดการ key อย่างปลอดภัย
+# สร้างไฟล์ .env แล้วใส่ GROQ_API_KEY="your-key" และ OPENAI_API_KEY="your-key"
+try:
+    load_dotenv()
+    GROQ_KEY = os.getenv("GROQ_API_KEY")
+    OPENAI_KEY = os.getenv("OPENAI_API_KEY")
 
-# -------------------------------
+    # Setting keys by environment
+    os.environ["GROQ_API_KEY"] = GROQ_KEY
+    os.environ["OPENAI_API_KEY"] = OPENAI_KEY
+except Exception as e:
+    print(f"Could not load .env file: {e}")
+    GROQ_KEY = None
+    OPENAI_KEY = None
+
+
 # Model list
 MODELS = {
     "🧠 OpenAI GPT (gpt-4o-mini)": {
@@ -38,70 +48,89 @@ MODELS = {
     },
 }
 
-# -------------------------------
 # Basic Menu List
 basic_menu = [
-    "ข้าวกะเพราไข่ดาว 🍳",
-    "ก๋วยเตี๋ยวเรือ 🥢",
-    "ส้มตำ ไก่ย่าง ข้าวเหนียว 🐔",
-    "ข้าวผัดกุ้ง 🍤",
-    "ผัดไทย 🥜",
-    "ชาบู 🍲",
-    "หมูกระทะ 🐷🔥",
-    "ราเมง 🍜",
-    "ซูชิ 🍣",
-    "พิซซ่า 🍕"
+    "ข้าวกะเพราไข่ดาว 🍳", "ก๋วยเตี๋ยวเรือ 🥢", "ส้มตำ ไก่ย่าง ข้าวเหนียว 🐔",
+    "ข้าวผัดกุ้ง 🍤", "ผัดไทย 🥜", "ชาบู 🍲", "หมูกระทะ 🐷🔥",
+    "ราเมง 🍜", "ซูชิ 🍣", "พิซซ่า 🍕"
 ]
 
-# -------------------------------
-# ฟังก์ชันโหลดข้อมูลจาก JSON
-def load_food_data(file_path):
-    with open(file_path, 'r', encoding='utf-8') as file:
-        return json.load(file)
+# --- ส่วนของ Function Calling ---
 
-food_data = load_food_data('foodlist.json')
+# 1. โหลดข้อมูลเมนูอาหารจากไฟล์ JSON
+try:
+    with open('foodlist.json', 'r', encoding='utf-8') as f:
+        food_data = json.load(f)
+except FileNotFoundError:
+    st.error("ไม่พบไฟล์ foodlist.json กรุณาสร้างไฟล์ข้อมูลก่อน")
+    food_data = []
 
-# -------------------------------
-# Function Calling: ค้นหาเมนูใน JSON
-def search_food_in_json(criteria: str):
+# 2. สร้างฟังก์ชันสำหรับค้นหาเมนู (นี่คือฟังก์ชันที่เราจะให้ AI เรียกใช้)
+def search_menu(spicy: bool = None, seafood: bool = None, meat: str = None, cuisine: str = None, green_level: str = None, max_calories: int = None):
     """
-    criteria: คำที่ผู้ใช้พิมพ์ เช่น 'เผ็ด', 'เบาๆ', 'ซีฟู้ด'
-    ฟังก์ชันนี้จะคืนค่ารายการอาหารที่ตรงกับเงื่อนไขแบบง่าย
+    ค้นหาเมนูอาหารจากฐานข้อมูลตามเงื่อนไขที่กำหนด
+    
+    Args:
+        spicy (bool, optional): ต้องการอาหารรสเผ็ดหรือไม่.
+        seafood (bool, optional): ต้องการอาหารทะเลหรือไม่.
+        meat (str, optional): ประเภทของเนื้อสัตว์ที่ต้องการ เช่น 'pork', 'chicken', 'shrimp'.
+        cuisine (str, optional): ประเภทอาหาร เช่น 'thai', 'japanese', 'healthy'.
+        green_level (str, optional): ระดับการทานมังสวิรัติ 'vegetarian' หรือ 'vegan'.
+        max_calories (int, optional): ปริมาณแคลอรี่สูงสุด.
+
+    Returns:
+        list: รายชื่อเมนูที่ตรงตามเงื่อนไข
     """
-    result = []
-    c = criteria.lower()
+    results = food_data
+    
+    if spicy is not None:
+        results = [item for item in results if item['spicy'] == spicy]
+    if seafood is not None:
+        results = [item for item in results if item['seafood'] == seafood]
+    if meat:
+        results = [item for item in results if meat.lower() in item['meat']]
+    if cuisine:
+        results = [item for item in results if item['cuisine'].lower() == cuisine.lower()]
+    if green_level:
+        results = [item for item in results if item['green_level'].lower() == green_level.lower()]
+    if max_calories is not None:
+        results = [item for item in results if item['avg_calories'] <= max_calories]
+        
+    if not results:
+        return ["ไม่พบเมนูที่ตรงกับความต้องการของคุณเลย ลองเปลี่ยนเงื่อนไขดูนะ"]
+        
+    # คืนค่าเป็นชื่อเมนูและแคลอรี่
+    return [f"{item['name']} ({item['avg_calories']} kcal)" for item in results]
 
-    for item in food_data:
-        match = False
+# 3. กำหนด Schema ของฟังก์ชันเพื่อให้ AI รู้จัก (Tool Definition)
+tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "search_menu",
+            "description": "ค้นหาเมนูอาหารจากฐานข้อมูลตามเงื่อนไขที่ผู้ใช้ระบุ เช่น รสชาติ, ประเภทเนื้อสัตว์, แคลอรี่ หรือประเภทอาหาร",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "spicy": {"type": "boolean", "description": "ต้องการอาหารรสเผ็ดหรือไม่"},
+                    "seafood": {"type": "boolean", "description": "ต้องการอาหารทะเลหรือไม่"},
+                    "meat": {"type": "string", "description": "ประเภทเนื้อสัตว์ที่ต้องการ เช่น pork, chicken, shrimp"},
+                    "cuisine": {"type": "string", "description": "ประเภทอาหาร เช่น thai, japanese, healthy"},
+                    "green_level": {"type": "string", "enum": ["vegetarian", "vegan"], "description": "สำหรับคนทานมังสวิรัติหรือวีแกน"},
+                    "max_calories": {"type": "number", "description": "ปริมาณแคลอรี่สูงสุดที่ไม่ต้องการให้เกิน"}
+                },
+                "required": [], # ทำให้ทุก parameter เป็น optional
+            },
+        }
+    }
+]
 
-        # เช็คเงื่อนไขทีละอัน
-        if "เผ็ด" in c and item.get("spicy"):
-            match = True
-        if ("ซีฟู้ด" in c or "ทะเล" in c) and item.get("seafood"):
-            match = True
-        if "หมู" in c and "pork" in item.get("meat", []):
-            match = True
-        if "ไก่" in c and "chicken" in item.get("meat", []):
-            match = True
-        if "ผัก" in c and item.get("green_level") != "none":
-            match = True
-        if "เบา" in c and item.get("avg_calories", 0) < 300:
-            match = True
 
-        if match:
-            result.append(item)
+# --- ส่วนของ UI (Streamlit) ---
 
-    # ถ้าไม่เจออะไรเลย ให้สุ่มจากทั้งหมด
-    if not result:
-        result = food_data
-
-    return random.choice(result)
-
-# -------------------------------
-# UI
 st.set_page_config(page_title="FoodBot Kin-Arai-Dee 🍜", page_icon="🍽️")
 st.title("🍽 Kin-Arai-Dee FoodBot")
-st.title("ไม่รู้จะกินอะไรดี บอกฉันสิ!")
+st.subheader("ไม่รู้จะกินอะไรดี บอก AI สิ!")
 
 # Simple random
 if st.button("🍽️ สุ่มเมนูแบบง่าย (ไม่เสีย Token)"):
@@ -110,58 +139,73 @@ if st.button("🍽️ สุ่มเมนูแบบง่าย (ไม่�
 
 st.divider()
 
-selected_model = st.selectbox("เลือกโมเดล AI", list(MODELS.keys()))
-model_info = MODELS[selected_model]
-user_input = st.text_input("คุณ:", placeholder="เช่น อยากกินอะไรแซบๆ, อยากกินอะไรเบาๆ, ...")
+st.subheader("🤖 ให้ AI ช่วยคิดเมนู (พร้อมค้นหาจากฐานข้อมูล)")
+selected_model_name = st.selectbox("เลือกโมเดล AI", list(MODELS.keys()))
+model_info = MODELS[selected_model_name]
 
-# -------------------------------
-# 🧠 Function Calling ผ่าน LiteLLM
-if st.button("🧠 ให้ AI ช่วยคิดเมนู (Function Calling)"):
-    if user_input.strip():
-        with st.spinner(f"Thinking {selected_model}..."):
+user_input = st.text_input("คุณ:", placeholder="เช่น อยากกินอะไรแซ่บๆ ที่ไม่ใช่ทะเล, หาของกินคลีนๆให้หน่อย, ...")
 
-            # Function schema สำหรับ AI
-            functions = [
-                {
-                    "name": "search_food_in_json",
-                    "description": "ค้นหาเมนูอาหารจากไฟล์ JSON ตามคำอธิบายของผู้ใช้",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "criteria": {
-                                "type": "string",
-                                "description": "คำอธิบายความต้องการอาหาร เช่น 'เผ็ด', 'เบาๆ', 'ซีฟู้ด'"
-                            }
-                        },
-                        "required": ["criteria"]
-                    }
-                }
-            ]
-
-            response = completion(
-                model=model_info["id"],
-                messages=[
-                    {"role": "system", "content": "You are a food assistant who chooses food from a JSON database."},
-                    {"role": "user", "content": user_input}
-                ],
-                functions=functions,
-                temperature=0.5,
-                api_key=model_info["api_key"]
-            )
-
-            choice = response["choices"][0]
-            if choice["finish_reason"] == "function_call":
-                func_call = choice["message"]["function_call"]
-                func_name = func_call.name
-                func_args = json.loads(func_call.arguments)
-
-                if func_name == "search_food_in_json":
-                    menu = search_food_in_json(func_args["criteria"])
-                    st.success(f"🍜 ลองเมนูนี้ดูไหม: **{menu['name']}** ({menu['eng_name']})")
-                    st.info(f"🌿 แคลอรี่เฉลี่ย: {menu['avg_calories']} kcal | 🇹🇭 {menu['cuisine']}")
-            else:
-                st.warning("AI ไม่ได้เรียกฟังก์ชัน ลองใหม่อีกครั้งครับ")
-
-
+if st.button("🧠 ส่งให้ AI คิด"):
+    if not user_input.strip():
+        st.warning("กรุณาพิมพ์ความรู้สึก หรือสิ่งที่อยากกินก่อนนะครับ 😊")
+    elif not model_info.get("api_key"):
+        st.error(f"ไม่พบ API Key สำหรับ {selected_model_name} กรุณาตั้งค่าในไฟล์ .env")
     else:
-        st.warning("กรุณาพิมพ์ความรู้สึกก่อนนะครับ 😊")
+        with st.spinner(f"🤖 {selected_model_name} กำลังคิดเมนูให้สักครู่นะ..."):
+            try:
+                # --- ขั้นตอนการทำ Function Calling ---
+                
+                # 1. ส่ง request แรกให้ AI พร้อมกับ tools ที่เรามี
+                messages = [{"role": "user", "content": user_input}]
+                
+                first_response = completion(
+                    model=model_info["id"],
+                    messages=messages,
+                    tools=tools,
+                    tool_choice="auto", # ให้ AI ตัดสินใจเองว่าจะใช้ function หรือไม่
+                    api_key=model_info["api_key"]
+                )
+                
+                response_message = first_response.choices[0].message
+                messages.append(response_message) # เพิ่มการตอบกลับของ AI เข้าไปใน history
+
+                # 2. ตรวจสอบว่า AI ต้องการเรียกใช้ฟังก์ชันหรือไม่
+                if response_message.tool_calls:
+                    st.info("AI กำลังค้นหาข้อมูลจากเมนู...")
+                    
+                    # 3. เรียกใช้ฟังก์ชันตามที่ AI ร้องขอ
+                    available_functions = {"search_menu": search_menu}
+                    tool_call = response_message.tool_calls[0]
+                    function_name = tool_call.function.name
+                    function_to_call = available_functions[function_name]
+                    function_args = json.loads(tool_call.function.arguments)
+                    
+                    # Call the local function with arguments provided by the model
+                    function_response = function_to_call(**function_args)
+                    
+                    # 4. ส่งผลลัพธ์กลับไปให้ AI
+                    messages.append(
+                        {
+                            "tool_call_id": tool_call.id,
+                            "role": "tool",
+                            "name": function_name,
+                            "content": json.dumps(function_response, ensure_ascii=False),
+                        }
+                    )
+                    
+                    # 5. ให้ AI สรุปผลจากข้อมูลที่ได้ เพื่อสร้างคำตอบสุดท้าย
+                    st.info("AI กำลังเรียบเรียงคำตอบ...")
+                    final_response = completion(
+                        model=model_info["id"],
+                        messages=messages,
+                        api_key=model_info["api_key"]
+                    )
+                    ai_suggestion = final_response.choices[0].message.content
+                else:
+                    # ถ้า AI ไม่เรียกใช้ฟังก์ชัน ก็ใช้คำตอบแรกได้เลย
+                    ai_suggestion = response_message.content
+
+                st.success(f"🍜 **AI แนะนำว่า:**\n\n{ai_suggestion}")
+
+            except Exception as e:
+                st.error(f"เกิดข้อผิดพลาดในการสื่อสารกับ AI: {e}")
