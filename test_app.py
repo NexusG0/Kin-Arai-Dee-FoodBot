@@ -72,16 +72,23 @@ def search_food_in_json(criteria: str):
     c = criteria.lower()
 
     for item in food_data:
-        # เช็คคำหลักง่าย ๆ เช่น เผ็ด, ซีฟู้ด, หมู, ผัก
+        match = False
+
+        # เช็คเงื่อนไขทีละอัน
         if "เผ็ด" in c and item.get("spicy"):
-            result.append(item)
-        elif "ซีฟู้ด" in c and item.get("seafood"):
-            result.append(item)
-        elif "หมู" in c and "pork" in item.get("meat", []):
-            result.append(item)
-        elif "ผัก" in c and item.get("green_level") != "none":
-            result.append(item)
-        elif "เบา" in c and item.get("avg_calories", 0) < 300:
+            match = True
+        if ("ซีฟู้ด" in c or "ทะเล" in c) and item.get("seafood"):
+            match = True
+        if "หมู" in c and "pork" in item.get("meat", []):
+            match = True
+        if "ไก่" in c and "chicken" in item.get("meat", []):
+            match = True
+        if "ผัก" in c and item.get("green_level") != "none":
+            match = True
+        if "เบา" in c and item.get("avg_calories", 0) < 300:
+            match = True
+
+        if match:
             result.append(item)
 
     # ถ้าไม่เจออะไรเลย ให้สุ่มจากทั้งหมด
