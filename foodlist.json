@@ -244,7 +244,7 @@
     "contain_nut": "not-contain",
     "contain_milk": "contain",
     "avg_calories": null,
-    "cuisine": "chinese"
+    "cuisine": "thai"
   },
   {
     "name":  "ห่อหมกปู",
@@ -269,7 +269,8 @@
     "green_level": "none",
     "contain-nut": "none",
     "contain-milk": "none",
-    "cuisine": "chinese"
+    "avg_calories": null,
+    "cuisine": "thai"
   },
   {
     "name":  "ผัดกะเพรา",
