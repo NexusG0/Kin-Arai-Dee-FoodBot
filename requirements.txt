@@ -3,3 +3,4 @@ python-dotenv
 litellm
 openai
 groq
+sentence_transformers
