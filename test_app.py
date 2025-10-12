@@ -39,14 +39,6 @@ MODELS = {
         "id": "groq/llama-3.3-70b-versatile",
         "api_key": GROQ_KEY,
     },
-    "🐋 DeepSeek R1 Distill 70B": {
-        "id": "groq/deepseek-r1-distill-llama-70b",
-        "api_key": GROQ_KEY,
-    },
-    "🧪 Gemma 2 9B": {
-        "id": "groq/gemma2-9b-it",
-        "api_key": GROQ_KEY,
-    },
 }
 
 # --- โหลดโมเดล embedding ---
@@ -81,11 +73,11 @@ def build_menu_embeddings(menu_knowledge):
 menu_embeddings = build_menu_embeddings(menu_knowledge)
 
 # --- ฟังก์ชันสุ่มเมนูแบบ RAG ---
-def rag_random_menu(query: str = "อยากกินอะไรดี", top_k: int = 10):
+def rag_random_menu(query: str = "อยากกินอะไรดี", top_k: int = 16):
     """ใช้ Retrieval-Augmented Generation เพื่อสุ่มเมนูจากไฟล์ txt"""
     if not menu_embeddings:
         return "ไม่มีเมนูให้แนะนำ"
-    
+
     query_emb = rag_model.encode(query, normalize_embeddings=True)
 
     # คำนวณ similarity
@@ -99,10 +91,10 @@ def rag_random_menu(query: str = "อยากกินอะไรดี", top_
     selected_menu, score = random.choice(top_items)
     desc = menu_knowledge[selected_menu]
 
-    return f"🥢 วันนี้ลองกิน **{selected_menu}** ดูไหม?\n\n{desc}\n(ความใกล้เคียง {score:.2f})"
+    return f"🥢 วันนี้ลองกิน {selected_menu} ดูไหม?\n\n{desc}\n"
+
 
 # --- ส่วนของ Function Calling ---
-
 # 1. โหลดข้อมูลเมนูอาหารจากไฟล์ JSON
 try:
     with open('foodlist.json', 'r', encoding='utf-8') as f:
@@ -178,12 +170,6 @@ st.set_page_config(page_title="FoodBot Kin-Arai-Dee 🍜", page_icon="🍽️")
 st.title("🍽 Kin-Arai-Dee FoodBot")
 st.subheader("ไม่รู้จะกินอะไรดี บอก AI สิ!")
 
-# Simple random
-if st.button("🍽️ สุ่มเมนูจากไฟล์ txt"):
-    with st.spinner("🤖 กำลังวิเคราะห์เมนูจากไฟล์..."):
-        suggestion = rag_random_menu()
-        st.success(suggestion)
-
 st.divider()
 
 st.subheader("🤖 ให้ AI ช่วยคิดเมนู (พร้อมค้นหาจากฐานข้อมูล)")
@@ -256,3 +242,12 @@ if st.button("🧠 ส่งให้ AI คิด"):
 
             except Exception as e:
                 st.error(f"เกิดข้อผิดพลาดในการสื่อสารกับ AI: {e}")
+
+st.divider()
+
+# RAG random
+st.subheader("คิดไม่ออก ไม่รู้จะกินอะไรจริงๆ")
+if st.button("🍽️ สุ่มเมนูสิ้นคิด"):
+    with st.spinner("🤖 กำลังวิเคราะห์เมนูจากไฟล์..."):
+        suggestion = rag_random_menu()
+        st.success(suggestion)
