@@ -51,47 +51,83 @@ rag_model = load_rag_model()
 # --- โหลดเมนูจากไฟล์ txt ---
 @st.cache_data
 def load_menu_from_txt(file_path="menu.txt"):
+    """
+    แก้ไขฟังก์ชันนี้ให้จัดการกับการอ่านไฟล์และแยกข้อมูลแต่ละส่วนอย่างรัดกุม
+    เพื่อป้องกันการนำข้อมูลรูปภาพของเมนูก่อนหน้ามาใช้ซ้ำ
+    """
     menu_knowledge = {}
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
-                if ":" in line:
-                    name, desc = line.strip().split(":", 1)
-                    menu_knowledge[name.strip()] = desc.strip()
+                cleaned_line = line.strip()
+                if not cleaned_line or ":" not in cleaned_line:
+                    continue  # ข้ามบรรทัดที่ว่างเปล่าหรือไม่มี :
+
+                # แยกชื่อเมนูออกจากส่วนที่เหลือ
+                name_part, rest_part = cleaned_line.split(":", 1)
+                name = name_part.strip()
+                
+                # ตรวจสอบว่ามี URL รูปภาพหรือไม่
+                if "|" in rest_part:
+                    desc_part, img_part = rest_part.split("|", 1)
+                    desc = desc_part.strip()
+                    img_url = img_part.strip()
+                else:
+                    # ถ้าไม่มี | ก็ให้มีแค่คำอธิบาย
+                    desc = rest_part.strip()
+                    img_url = None
+                
+                # จัดเก็บข้อมูล
+                if name:
+                    menu_knowledge[name] = {
+                        "desc": desc,
+                        "img": img_url
+                    }
     except FileNotFoundError:
         st.error(f"ไม่พบไฟล์ {file_path}")
     return menu_knowledge
+
 
 menu_knowledge = load_menu_from_txt()
 
 # --- สร้าง embeddings ---
 @st.cache_data
 def build_menu_embeddings(menu_knowledge):
-    return {name: rag_model.encode(desc, normalize_embeddings=True)
-            for name, desc in menu_knowledge.items()}
+    # ใช้ list comprehension เพื่อให้แน่ใจว่าเราสร้าง embedding สำหรับทุกเมนูที่มีคำอธิบาย
+    menu_items = {name: data["desc"] for name, data in menu_knowledge.items() if data.get("desc")}
+    return {
+        name: rag_model.encode(desc, normalize_embeddings=True)
+        for name, desc in menu_items.items()
+    }
 
 menu_embeddings = build_menu_embeddings(menu_knowledge)
 
 # --- ฟังก์ชันสุ่มเมนูแบบ RAG ---
 def rag_random_menu(query: str = "อยากกินอะไรดี", top_k: int = 16):
-    """ใช้ Retrieval-Augmented Generation เพื่อสุ่มเมนูจากไฟล์ txt"""
     if not menu_embeddings:
-        return "ไม่มีเมนูให้แนะนำ"
+        return "ไม่มีเมนูให้แนะนำ", None
 
     query_emb = rag_model.encode(query, normalize_embeddings=True)
+    sims = {name: float(util.dot_score(query_emb, emb)) for name, emb in menu_embeddings.items()}
+    
+    # กรองให้เหลือเฉพาะเมนูที่มีคะแนนความคล้ายมากกว่า 0 เพื่อความสมเหตุสมผล
+    relevant_items = {name: score for name, score in sims.items() if score > 0.1}
+    if not relevant_items:
+        # ถ้าไม่มีเมนูที่เข้าเค้าเลย ให้สุ่มจากทั้งหมดแทน
+        relevant_items = sims
 
-    # คำนวณ similarity
-    sims = {name: float(util.dot_score(query_emb, emb))
-            for name, emb in menu_embeddings.items()}
+    top_items = sorted(relevant_items.items(), key=lambda x: x[1], reverse=True)[:top_k]
+    
+    if not top_items:
+        return "ขออภัย ไม่มีเมนูที่เข้ากับความต้องการของคุณเลย", None
 
-    # เอา top-k ที่ใกล้เคียงที่สุด
-    top_items = sorted(sims.items(), key=lambda x: x[1], reverse=True)[:top_k]
-
-    # สุ่มจาก top-k
     selected_menu, score = random.choice(top_items)
-    desc = menu_knowledge[selected_menu]
+    data = menu_knowledge[selected_menu]
+    desc = data.get("desc", "ไม่มีคำอธิบาย")
+    img = data.get("img") # ดึง URL รูปภาพจาก data ที่ถูกต้อง
 
-    return f"🥢 วันนี้ลองกิน {selected_menu} ดูไหม?\n\n{desc}\n"
+    text = f"🥢 วันนี้ลองกิน **{selected_menu}** ดูไหม?\n\n{desc}\n"
+    return text, img
 
 
 # --- ส่วนของ Function Calling ---
@@ -249,5 +285,7 @@ st.divider()
 st.subheader("คิดไม่ออก ไม่รู้จะกินอะไรจริงๆ")
 if st.button("🍽️ สุ่มเมนูสิ้นคิด"):
     with st.spinner("🤖 กำลังวิเคราะห์เมนูจากไฟล์..."):
-        suggestion = rag_random_menu()
+        suggestion, img_url = rag_random_menu()
         st.success(suggestion)
+        if img_url:
+            st.image(img_url, caption=f"เมนูแนะนำ", use_container_width=True)
