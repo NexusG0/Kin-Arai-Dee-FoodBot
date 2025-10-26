@@ -33,7 +33,7 @@ It is part of course 204203, Computer Science, at Chiang Mai University.
    4. Run the app
 
       ```
-      $ streamlit run app.py
+      $ streamlit run local_app.py
       ```
 ## Project demo link
    - [🍽️ Kin-Arai-Dee FoodBot](https://kinaraidee.streamlit.app/)
