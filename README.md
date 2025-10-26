@@ -1,6 +1,6 @@
 # 🍽️ Kin-Arai-Dee FoodBot
 
-A simple chatbot that generates random meal ideas using LLM models such as OpenAI’s GPT-3.5 and others.
+A simple chatbot that generates random meal ideas using LLM models such as OpenAI’s GPT-3.5 and others.  
 Built with Streamlit.
 
 This is a group project designed to explore the process of applying to an LLM program.  
