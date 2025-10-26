@@ -36,7 +36,7 @@ It is part of course 204203, Computer Science, at Chiang Mai University.
       $ streamlit run app.py
       ```
 ## Project demo link
-   - [🍽️Kin-Arai-Dee FoodBot](https://kinaraidee.streamlit.app/)
+   - [🍽️ Kin-Arai-Dee FoodBot](https://kinaraidee.streamlit.app/)
 
 ## Tools
    - [streamlit](https://streamlit.io/)  
