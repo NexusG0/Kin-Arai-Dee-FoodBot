@@ -1,9 +1,10 @@
 # 🍽️ Kin-Arai-Dee FoodBot
 
-A simple Chatbot that's can random idea for your meal by using OpenAI's GPT-3.5 and others.
-Base on Streamlit app.
+A simple chatbot that generates random meal ideas using LLM models such as OpenAI’s GPT-3.5 and others.
+Built with Streamlit.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://chatbot-template.streamlit.app/)
+This is a group project designed to explore the process of applying to an LLM program.
+It is part of course 204203, Computer Science, at Chiang Mai University.
 
 ### How to run it on your own machine
    
@@ -16,7 +17,7 @@ Base on Streamlit app.
       $ source .venv/bin/activate
       ```
       
-      For macOS
+      For Linux/macOS
    
       ```
       $ python3 -m venv venv
@@ -34,3 +35,16 @@ Base on Streamlit app.
       ```
       $ streamlit run app.py
       ```
+### Project demo link
+   [🍽️Kin-Arai-Dee FoodBot](https://kinaraidee.streamlit.app/)
+
+### Tools
+   -[streamlit](https://streamlit.io/)
+   -[LiteLLM](https://www.litellm.ai/)
+
+### Project Contributors
+
+   -670510729 Suvisit Kitchon [NexusG0](https://github.com/NexusG0) Backend Developer (Function calling) / Code integration
+   -670510727 Siriwat Tidsuksai [siriwat951](https://github.com/siriwat951) Backend Developer (RAG) / Tester
+   -670510652 Nawat Watthanawong [Vector033](https://github.com/Vector033) Backend Developer (RAG) / Slide presentation maker
+   -670510731 Sahapan lankapin [aomaomnoob](https://github.com/aomaomnoob) Backend Developer (Function calling) / Menu research (json)
